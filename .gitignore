@@ -1,4 +1,7 @@
 .venv/
+.venv-win/
+.venv-conda-test/
+.tmp/
 __pycache__/
 .pytest_cache/
 transcripts/

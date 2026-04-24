@@ -126,6 +126,37 @@ def parse_json3(text: str) -> list[TranscriptSegment]:
     return segments
 
 
+def incremental_caption_text(previous: str, current: str) -> str:
+    if not previous:
+        return current
+    if current == previous or previous.endswith(current):
+        return ""
+    if current.startswith(previous):
+        return current[len(previous) :].strip()
+
+    max_overlap = min(len(previous), len(current))
+    for size in range(max_overlap, 0, -1):
+        if previous[-size:] == current[:size]:
+            return current[size:].strip()
+    return current
+
+
+def dedupe_rolling_captions(segments: Iterable[TranscriptSegment]) -> list[TranscriptSegment]:
+    cleaned: list[TranscriptSegment] = []
+    previous = ""
+
+    for segment in segments:
+        text = incremental_caption_text(previous, segment.text)
+        previous = segment.text
+        if not text:
+            continue
+        if cleaned and cleaned[-1].text == text:
+            continue
+        cleaned.append(TranscriptSegment(segment.start, segment.end, text))
+
+    return cleaned
+
+
 def transcript_text(segments: Iterable[TranscriptSegment]) -> str:
     return "\n".join(segment.text for segment in segments if segment.text).strip() + "\n"
 
@@ -274,6 +305,8 @@ def try_caption_transcript(source: str, args: argparse.Namespace) -> TranscriptR
         segments = parse_json3(raw_text)
     else:
         segments = parse_vtt_or_srt(raw_text)
+    if method == "auto-captions":
+        segments = dedupe_rolling_captions(segments)
 
     if not segments:
         return None

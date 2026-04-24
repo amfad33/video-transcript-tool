@@ -1,6 +1,13 @@
 import unittest
 
-from transcript_tool import parse_json3, parse_vtt_or_srt, seconds_to_srt, transcript_text
+from transcript_tool import (
+    TranscriptSegment,
+    dedupe_rolling_captions,
+    parse_json3,
+    parse_vtt_or_srt,
+    seconds_to_srt,
+    transcript_text,
+)
 
 
 class TranscriptParsingTests(unittest.TestCase):
@@ -44,6 +51,25 @@ Again
 
     def test_seconds_to_srt(self):
         self.assertEqual(seconds_to_srt(3661.25), "01:01:01,250")
+
+    def test_dedupe_rolling_captions(self):
+        segments = [
+            TranscriptSegment(0.0, 1.0, "How's that uh how's that internet"),
+            TranscriptSegment(1.0, 2.0, "How's that uh how's that internet though, dude?"),
+            TranscriptSegment(2.0, 2.1, "though, dude?"),
+            TranscriptSegment(2.1, 3.0, "though, dude? I see that she's not speaking up today."),
+        ]
+
+        cleaned = dedupe_rolling_captions(segments)
+
+        self.assertEqual(
+            [segment.text for segment in cleaned],
+            [
+                "How's that uh how's that internet",
+                "though, dude?",
+                "I see that she's not speaking up today.",
+            ],
+        )
 
 
 if __name__ == "__main__":
