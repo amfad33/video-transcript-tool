@@ -16,7 +16,7 @@ The tool is designed to be practical first: it uses existing captions when they 
 - Supports `txt`, `srt`, `vtt`, and `json` output formats.
 - Can use browser cookies or a cookies file for private videos you can already access.
 - Provides a local Flask UI for Persian-to-English dubbing with editable translations.
-- Generates English TTS segment audio, keeps speech speed natural where possible, and combines it with the original video using FFmpeg.
+- Generates English subtitle files, English TTS segment audio, and a final MP4 using FFmpeg.
 
 ## What It Uses
 
@@ -142,13 +142,15 @@ The default workflow is Persian audio/video input to English audio/video output:
    - `Strict timing`: fits clips inside original segment timing. This is only for cases where sync matters more than natural speech.
    - `Re-segment`: currently follows the natural-overlap implementation path and is reserved for a more advanced segment redistribution pass.
 8. Review and edit the English text. The review page shows timing diagnostics for each segment so long lines can be shortened before building.
-9. Approve to generate the English audio track and final MP4.
+9. Approve to generate subtitle files, the English audio track, and the final MP4.
 
 Generated files are written under `outputs/<original-name>_<YYYYMMDD_HHMMSS>/`, for example:
 
 - `test video_20260628_153012_transcript.json`
 - `test video_20260628_153012_translation.json`
 - `test video_20260628_153012_approved.json`
+- `test video_20260628_153012_subtitles.srt`
+- `test video_20260628_153012_subtitles.vtt`
 - `test video_20260628_153012_audio.wav`
 - `test video_20260628_153012_english.mp4`
 

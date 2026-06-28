@@ -76,6 +76,8 @@ class DubJob:
     audio_path: str | None = None
     video_path: str | None = None
     timing_report_path: str | None = None
+    subtitle_srt_path: str | None = None
+    subtitle_vtt_path: str | None = None
 
 
 def safe_stem(path: Path) -> str:
@@ -109,6 +111,8 @@ def load_job(path: Path) -> DubJob:
     data.setdefault("tts_speed", 1.0)
     data.setdefault("max_speed_adjustment", 0.1)
     data.setdefault("timing_report_path", None)
+    data.setdefault("subtitle_srt_path", None)
+    data.setdefault("subtitle_vtt_path", None)
     if data.get("timing_mode") not in TIMING_MODES:
         data["timing_mode"] = "smart"
     return DubJob(**data)
@@ -273,6 +277,48 @@ def approve_segments(job: DubJob, segments: list[DubSegment]) -> Path:
     job.approved_path = str(approved_path)
     save_job(job)
     return approved_path
+
+
+def subtitle_timestamp(seconds: float, separator: str) -> str:
+    total_ms = max(0, int(round(seconds * 1000)))
+    hours, remainder = divmod(total_ms, 3_600_000)
+    minutes, remainder = divmod(remainder, 60_000)
+    secs, millis = divmod(remainder, 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}{separator}{millis:03d}"
+
+
+def subtitle_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def write_subtitles(job: DubJob, segments: list[DubSegment]) -> tuple[Path, Path]:
+    output_dir = Path(job.output_dir)
+    srt_path = output_dir / f"{job.job_id}_subtitles.srt"
+    vtt_path = output_dir / f"{job.job_id}_subtitles.vtt"
+    srt_blocks: list[str] = []
+    vtt_blocks: list[str] = ["WEBVTT", ""]
+    cursor = 0.0
+    index = 1
+    for segment in segments:
+        text = subtitle_text(segment.translated_text)
+        if not text:
+            continue
+        start = segment.start if segment.start is not None else cursor
+        end = segment.end if segment.end is not None else max(start + 1.0, start + estimate_spoken_duration(text, job.tts_speed))
+        if end <= start:
+            end = start + 1.0
+        srt_blocks.append(
+            f"{index}\n{subtitle_timestamp(start, ',')} --> {subtitle_timestamp(end, ',')}\n{text}\n"
+        )
+        vtt_blocks.append(f"{subtitle_timestamp(start, '.')} --> {subtitle_timestamp(end, '.')}\n{text}\n")
+        cursor = end
+        index += 1
+    srt_path.write_text("\n".join(srt_blocks), encoding="utf-8")
+    vtt_path.write_text("\n".join(vtt_blocks), encoding="utf-8")
+    job.subtitle_srt_path = str(srt_path)
+    job.subtitle_vtt_path = str(vtt_path)
+    save_job(job)
+    return srt_path, vtt_path
 
 
 def run(command: list[str]) -> None:
@@ -488,6 +534,7 @@ def build_overlay_audio(source: Path, work_dir: Path, timed_dir: Path, job: DubJ
 
 def build_audio_and_video(job: DubJob, segments: list[DubSegment]) -> tuple[Path, Path]:
     ensure_ffmpeg()
+    write_subtitles(job, segments)
     source = Path(job.source_path)
     work_dir = Path(job.output_dir)
     tts_dir = work_dir / "tts_segments"

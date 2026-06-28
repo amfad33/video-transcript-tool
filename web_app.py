@@ -142,7 +142,16 @@ def result_job(job_id: str):
     job = load_job(job_path(job_id))
     files = [
         path
-        for path in [job.transcript_path, job.translation_path, job.approved_path, job.timing_report_path, job.audio_path, job.video_path]
+        for path in [
+            job.transcript_path,
+            job.translation_path,
+            job.approved_path,
+            job.subtitle_srt_path,
+            job.subtitle_vtt_path,
+            job.timing_report_path,
+            job.audio_path,
+            job.video_path,
+        ]
         if path
     ]
     return render_template("result.html", job=job, files=files)
