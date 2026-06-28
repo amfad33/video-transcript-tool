@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dub Output</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <section class="panel">
+      <p class="eyebrow">{{ job.job_id }}</p>
+      <h1>English output is ready</h1>
+      {% if job.video_path %}
+      <video controls src="{{ url_for('download', job_id=job.job_id, name=job.video_path.split('/')[-1]) }}"></video>
+      {% endif %}
+      <div class="downloads">
+        {% for file in files %}
+        <a href="{{ url_for('download', job_id=job.job_id, name=file.split('/')[-1]) }}">{{ file.split('/')[-1] }}</a>
+        {% endfor %}
+      </div>
+      <a class="secondary" href="{{ url_for('index') }}">Start another job</a>
+    </section>
+  </main>
+</body>
+</html>

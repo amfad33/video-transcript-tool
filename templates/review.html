@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review Translation</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="review-shell">
+    <header class="review-header">
+      <div>
+        <p class="eyebrow">{{ job.job_id }}</p>
+        <h1>Review English voice-over text</h1>
+      </div>
+      <a href="{{ url_for('index') }}">New job</a>
+    </header>
+    <form action="{{ url_for('approve_job', job_id=job.job_id) }}" method="post">
+      <input type="hidden" name="count" value="{{ rows|length }}">
+      <div class="segments">
+        {% for original, translated, timing in rows %}
+        <section class="segment segment-{{ timing.status }}">
+          <div class="time">
+            <strong>{{ '%.2f'|format(original.start or 0) }}s - {{ '%.2f'|format(original.end or 0) }}s</strong>
+            <span>{{ timing.status.replace('-', ' ') }}</span>
+            {% if timing.required_speed %}<small>{{ '%.2f'|format(timing.required_speed) }}x needed</small>{% endif %}
+          </div>
+          <input type="hidden" name="start_{{ loop.index0 }}" value="{{ original.start if original.start is not none else '' }}">
+          <input type="hidden" name="end_{{ loop.index0 }}" value="{{ original.end if original.end is not none else '' }}">
+          <input type="hidden" name="original_{{ loop.index0 }}" value="{{ original.text }}">
+          <input type="hidden" name="notes_{{ loop.index0 }}" value="{{ translated.notes }}">
+          <div class="source" dir="rtl">{{ original.text }}</div>
+          <div>
+            <textarea name="translated_{{ loop.index0 }}" rows="3">{{ translated.translated_text }}</textarea>
+            <p class="timing-note">{{ timing.message }} Estimated: {{ '%.1f'|format(timing.estimated_duration) }}s{% if timing.slot_duration %}; slot: {{ '%.1f'|format(timing.slot_duration) }}s{% endif %}.</p>
+          </div>
+          {% if translated.notes %}<p class="note">{{ translated.notes }}</p>{% endif %}
+        </section>
+        {% endfor %}
+      </div>
+      <div class="sticky-actions">
+        <button type="submit">Approve and build English video</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

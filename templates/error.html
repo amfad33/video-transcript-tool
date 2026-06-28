@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <section class="panel">
+      <p class="eyebrow">Error</p>
+      <h1>{{ title }}</h1>
+      <pre class="error-box">{{ message }}</pre>
+      <a class="secondary" href="{{ url_for('index') }}">Back to setup</a>
+    </section>
+  </main>
+</body>
+</html>

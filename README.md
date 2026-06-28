@@ -2,6 +2,8 @@
 
 A local command-line tool for creating transcripts from videos and audio files.
 
+It also includes a small local web app for turning Persian videos into reviewed English voice-over videos using OpenAI translation/TTS and FFmpeg.
+
 The tool is designed to be practical first: it uses existing captions when they are available, and falls back to local speech-to-text when captions are missing or unusable.
 
 ## What It Does
@@ -13,6 +15,8 @@ The tool is designed to be practical first: it uses existing captions when they 
 - Writes transcript files to `transcripts/`.
 - Supports `txt`, `srt`, `vtt`, and `json` output formats.
 - Can use browser cookies or a cookies file for private videos you can already access.
+- Provides a local Flask UI for Persian-to-English dubbing with editable translations.
+- Generates English TTS segment audio, keeps speech speed natural where possible, and combines it with the original video using FFmpeg.
 
 ## What It Uses
 
@@ -21,9 +25,14 @@ The tool is designed to be practical first: it uses existing captions when they 
 - [`faster-whisper`](https://github.com/SYSTRAN/faster-whisper) for local Whisper transcription
 - CTranslate2 through `faster-whisper` for efficient CPU or CUDA inference
 - Python standard library modules for parsing captions, formatting timestamps, and writing outputs
+- Flask for the local review UI
+- OpenAI for translation and text-to-speech in the dubbing workflow
+- FFmpeg/ffprobe for final audio and video assembly
 - `unittest` for the included parser tests
 
 No paid transcription API is required. Whisper models are downloaded locally the first time they are used.
+
+The dubbing workflow does require an OpenAI API key for translation and TTS. Do not put API keys in source files.
 
 ## How It Works
 
@@ -96,6 +105,52 @@ By default, outputs are written to `transcripts/` as:
 - `.txt` plain text
 - `.srt` subtitles
 - `.json` structured metadata and segments
+
+## Web Dubbing App
+
+Set your OpenAI key in your shell or in a local `.env` file:
+
+```powershell
+$env:OPENAI_API_KEY = "sk-..."
+```
+
+On macOS/Linux:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+```
+
+Start the local web app:
+
+```bash
+python3 web_app.py
+```
+
+Open `http://127.0.0.1:5000`.
+
+The default workflow is Persian audio/video input to English audio/video output:
+
+1. Choose a video file or provide a local path.
+2. Keep source language as `fa` and target language as `en`.
+3. Pick a Whisper transcription model. `small` is the practical starting point; use `medium`, `large-v3`, or `turbo` if Persian transcription quality is not good enough.
+4. Pick a translation model. `gpt-4.1` or `gpt-4o` are the quality-first choices; mini models are cheaper.
+5. Pick a TTS model and voice. `gpt-4o-mini-tts` is the default because it supports clearer speech instructions and speed control.
+6. Pick base speech speed and the maximum automatic speed adjustment. Keep this conservative; 5-10% usually sounds natural.
+7. Pick a timing mode:
+   - `Smart timing`: the default. It does not slow short clips down. It adds silence when speech is short, uses limited TTS speed adjustment when speech is slightly long, and flags lines that should be shortened.
+   - `Natural overlap`: preserves speech duration and overlays clips at their original start times. Better voice-over feel, looser sync.
+   - `Strict timing`: fits clips inside original segment timing. This is only for cases where sync matters more than natural speech.
+   - `Re-segment`: currently follows the natural-overlap implementation path and is reserved for a more advanced segment redistribution pass.
+8. Review and edit the English text. The review page shows timing diagnostics for each segment so long lines can be shortened before building.
+9. Approve to generate the English audio track and final MP4.
+
+Generated files are written under `outputs/<original-name>_<YYYYMMDD_HHMMSS>/`, for example:
+
+- `test video_20260628_153012_transcript.json`
+- `test video_20260628_153012_translation.json`
+- `test video_20260628_153012_approved.json`
+- `test video_20260628_153012_audio.wav`
+- `test video_20260628_153012_english.mp4`
 
 ## Useful Options
 

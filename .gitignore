@@ -1,8 +1,11 @@
 .venv/
 .venv-win/
 .venv-conda-test/
+.env
 .tmp/
 __pycache__/
 .pytest_cache/
 transcripts/
+outputs/
+uploads/
 *.pyc

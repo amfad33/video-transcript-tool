@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Persian to English Dubber</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <section class="panel">
+      <div class="heading">
+        <p class="eyebrow">Local video dubbing</p>
+        <h1>Persian video to English voice-over</h1>
+        <p>Transcribe Persian speech, translate it into editable English, then create a new English audio track and final MP4.</p>
+      </div>
+
+      {% if not has_api_key %}
+      <div class="warning">OPENAI_API_KEY is not set. Add it to your shell or a local .env file before running translation or TTS.</div>
+      {% endif %}
+
+      <form action="{{ url_for('create_job') }}" method="post" enctype="multipart/form-data" class="form-grid">
+        <label>
+          Upload video
+          <input type="file" name="video_file" accept="video/*,audio/*">
+        </label>
+        <label>
+          Or local path
+          <input name="local_path" value="{{ sample_path }}" placeholder="/path/to/video.mp4">
+        </label>
+        <label>
+          Source language
+          <input name="source_language" value="fa">
+        </label>
+        <label>
+          Target language
+          <input name="target_language" value="en">
+        </label>
+        <label>
+          Transcription provider
+          <select name="transcription_provider">
+            <option value="openai" selected>OpenAI API, no Hugging Face download</option>
+            <option value="local">Local faster-whisper</option>
+          </select>
+        </label>
+        <label>
+          OpenAI transcription model
+          <select name="openai_transcription_model">
+            {% for model in openai_transcription_models %}<option value="{{ model }}">{{ model }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>
+          Local Whisper model
+          <select name="whisper_model">
+            {% for model in whisper_models %}<option value="{{ model }}">{{ model }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>
+          Translation model
+          <select name="translation_model">
+            {% for model in translation_models %}<option value="{{ model }}">{{ model }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>
+          TTS model
+          <select name="tts_model">
+            {% for model in tts_models %}<option value="{{ model }}">{{ model }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>
+          Voice
+          <select name="tts_voice">
+            {% for voice in tts_voices %}<option value="{{ voice }}">{{ voice }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>
+          Base speech speed
+          <select name="tts_speed">
+            <option value="0.95">0.95x relaxed</option>
+            <option value="1.0" selected>1.00x natural</option>
+            <option value="1.05">1.05x compact</option>
+          </select>
+        </label>
+        <label>
+          Max speed adjustment
+          <select name="max_speed_adjustment">
+            <option value="0.05">5%</option>
+            <option value="0.10" selected>10%</option>
+            <option value="0.15">15%</option>
+          </select>
+        </label>
+        <fieldset class="timing">
+          <legend>Timing mode</legend>
+          <label><input type="radio" name="timing_mode" value="smart" checked> Smart timing: keep natural speech, add silence when clips are short, and only use small speed changes when needed.</label>
+          <label><input type="radio" name="timing_mode" value="overlap"> Natural overlap: keep speech more natural and allow small spillover. Better voice-over feel, looser sync.</label>
+          <label><input type="radio" name="timing_mode" value="strict"> Strict timing: fit each English clip inside the original segment. Use only when exact timing matters more than voice quality.</label>
+          <label><input type="radio" name="timing_mode" value="resegment"> Re-segment: currently uses natural overlap as the first implementation step.</label>
+        </fieldset>
+        <button type="submit">Create transcript and translation</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
