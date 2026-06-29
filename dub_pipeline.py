@@ -16,7 +16,7 @@ from openai import OpenAI
 
 from transcript_tool import TranscriptResult, TranscriptSegment, process_source, write_outputs
 
-load_dotenv()
+load_dotenv(override=True)
 os.environ.setdefault("SSL_CERT_FILE", certifi.where())
 os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
 

@@ -27,7 +27,7 @@ from dub_pipeline import (
     transcribe_video,
 )
 
-load_dotenv()
+load_dotenv(override=True)
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024 * 1024
