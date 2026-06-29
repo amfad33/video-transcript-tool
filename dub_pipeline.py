@@ -31,6 +31,16 @@ WHISPER_MODELS = ["small", "medium", "large-v3", "turbo"]
 OPENAI_TRANSCRIPTION_MODELS = ["whisper-1", "gpt-4o-mini-transcribe", "gpt-4o-transcribe"]
 TRANSCRIPTION_PROVIDERS = ["openai", "local"]
 TIMING_MODES = ["smart", "overlap", "strict", "resegment"]
+LANGUAGE_NAMES = {
+    "en": "English",
+    "fa": "Persian",
+    "ar": "Arabic",
+}
+
+
+def output_stem(job: DubJob) -> str:
+    target_language = LANGUAGE_NAMES.get(job.target_language, job.target_language).lower()
+    return f"{job.job_id}_{target_language}"
 
 
 @dataclass
@@ -215,22 +225,29 @@ def load_transcript(path: Path) -> TranscriptResult:
     )
 
 
+def translation_system_prompt(job: DubJob) -> str:
+    source_language = LANGUAGE_NAMES.get(job.source_language, job.source_language)
+    target_language = LANGUAGE_NAMES.get(job.target_language, job.target_language)
+    return (
+        f"You translate {source_language} educational video transcripts into natural {target_language} voice-over. "
+        f"Preserve meaning, technical terms, and segment order. Write concise spoken {target_language} for dubbing, "
+        "not literal subtitles. Prefer natural short sentences that can fit near the source timing. "
+        f"If a faithful version is likely too long, make the {target_language} more compact and note that choice. "
+        "Return only JSON."
+    )
+
+
 def translate_segments(job: DubJob, transcript: TranscriptResult) -> list[DubSegment]:
     api = client()
     payload = [asdict(segment) for segment in transcript.segments if segment.text.strip()]
+    target_language = LANGUAGE_NAMES.get(job.target_language, job.target_language)
     response = api.chat.completions.create(
         model=job.translation_model,
         response_format={"type": "json_object"},
         messages=[
             {
                 "role": "system",
-                "content": (
-                    "You translate Persian educational video transcripts into natural English voice-over. "
-                    "Preserve meaning, technical terms, and segment order. Write concise spoken English for dubbing, "
-                    "not literal subtitles. Prefer natural short sentences that can fit near the source timing. "
-                    "If a faithful version is likely too long, make the English more compact and note that choice. "
-                    "Return only JSON."
-                ),
+                "content": translation_system_prompt(job),
             },
             {
                 "role": "user",
@@ -245,7 +262,7 @@ def translate_segments(job: DubJob, transcript: TranscriptResult) -> list[DubSeg
                                     "start": "number or null",
                                     "end": "number or null",
                                     "original_text": "source text",
-                                    "translated_text": "English translation for TTS",
+                                    "translated_text": f"{target_language} translation for TTS",
                                     "notes": "short optional warning or empty string",
                                 }
                             ]
@@ -293,8 +310,9 @@ def subtitle_text(text: str) -> str:
 
 def write_subtitles(job: DubJob, segments: list[DubSegment]) -> tuple[Path, Path]:
     output_dir = Path(job.output_dir)
-    srt_path = output_dir / f"{job.job_id}_subtitles.srt"
-    vtt_path = output_dir / f"{job.job_id}_subtitles.vtt"
+    stem = output_stem(job)
+    srt_path = output_dir / f"{stem}.srt"
+    vtt_path = output_dir / f"{stem}.vtt"
     srt_blocks: list[str] = []
     vtt_blocks: list[str] = ["WEBVTT", ""]
     cursor = 0.0
@@ -548,7 +566,7 @@ def build_audio_and_video(job: DubJob, segments: list[DubSegment]) -> tuple[Path
         audio_path = build_concat_audio(source, work_dir, timed_dir, job, segments)
     else:
         audio_path = build_overlay_audio(source, work_dir, timed_dir, job, segments)
-    video_path = work_dir / f"{job.job_id}_english.mp4"
+    video_path = work_dir / f"{output_stem(job)}.mp4"
     run(["ffmpeg", "-y", "-i", str(source), "-i", str(audio_path), "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-shortest", str(video_path)])
     job.audio_path = str(audio_path)
     job.video_path = str(video_path)

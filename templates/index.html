@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Persian to English Dubber</title>
+  <title>Video Dubber</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -11,8 +11,8 @@
     <section class="panel">
       <div class="heading">
         <p class="eyebrow">Local video dubbing</p>
-        <h1>Persian video to English voice-over</h1>
-        <p>Transcribe Persian speech, translate it into editable English, then create a new English audio track and final MP4.</p>
+        <h1>Video voice-over builder</h1>
+        <p>Transcribe source speech, translate it into editable voice-over text, then create a new audio track and final MP4.</p>
       </div>
 
       {% if not has_api_key %}
@@ -30,11 +30,15 @@
         </label>
         <label>
           Source language
-          <input name="source_language" value="fa">
+          <select name="source_language">
+            {% for code, label in languages %}<option value="{{ code }}"{% if code == "fa" %} selected{% endif %}>{{ label }} ({{ code }})</option>{% endfor %}
+          </select>
         </label>
         <label>
           Target language
-          <input name="target_language" value="en">
+          <select name="target_language">
+            {% for code, label in languages %}<option value="{{ code }}"{% if code == "en" %} selected{% endif %}>{{ label }} ({{ code }})</option>{% endfor %}
+          </select>
         </label>
         <label>
           Transcription provider

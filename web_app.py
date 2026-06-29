@@ -36,6 +36,12 @@ OUTPUTS_DIR = BASE_DIR / "outputs"
 UPLOADS_DIR = BASE_DIR / "uploads"
 OUTPUTS_DIR.mkdir(exist_ok=True)
 UPLOADS_DIR.mkdir(exist_ok=True)
+LANGUAGES = [
+    ("en", "English"),
+    ("fa", "Persian"),
+    ("ar", "Arabic"),
+]
+LANGUAGE_CODES = {code for code, _label in LANGUAGES}
 
 
 def job_path(job_id: str) -> Path:
@@ -49,6 +55,7 @@ def index():
         "index.html",
         has_api_key=bool(os.environ.get("OPENAI_API_KEY")),
         sample_path=str(sample_path) if sample_path.exists() else "",
+        languages=LANGUAGES,
         whisper_models=WHISPER_MODELS,
         transcription_providers=TRANSCRIPTION_PROVIDERS,
         openai_transcription_models=OPENAI_TRANSCRIPTION_MODELS,
@@ -78,11 +85,16 @@ def create_job():
         job_id = make_job_id(source_path)
         output_dir = OUTPUTS_DIR / job_id
         output_dir.mkdir(parents=True, exist_ok=True)
+        source_language = request.form.get("source_language", "fa") or "fa"
+        target_language = request.form.get("target_language", "en") or "en"
+        if source_language not in LANGUAGE_CODES or target_language not in LANGUAGE_CODES:
+            raise ValueError("Choose a supported source and target language.")
+
         job = DubJob(
             job_id=job_id,
             source_path=str(source_path),
-            source_language=request.form.get("source_language", "fa") or "fa",
-            target_language=request.form.get("target_language", "en") or "en",
+            source_language=source_language,
+            target_language=target_language,
             transcription_provider=request.form.get("transcription_provider", "openai"),
             whisper_model=request.form.get("whisper_model", "small"),
             openai_transcription_model=request.form.get("openai_transcription_model", "whisper-1"),

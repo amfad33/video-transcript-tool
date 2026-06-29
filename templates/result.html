@@ -10,7 +10,7 @@
   <main class="shell">
     <section class="panel">
       <p class="eyebrow">{{ job.job_id }}</p>
-      <h1>English output is ready</h1>
+      <h1>Output is ready</h1>
       {% if job.video_path %}
       <video controls src="{{ url_for('download', job_id=job.job_id, name=job.video_path.split('/')[-1]) }}"></video>
       {% endif %}
